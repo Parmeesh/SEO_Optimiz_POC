@@ -1,0 +1,12 @@
+newspaper3k
+langchain
+langchain-google-genai
+streamlit
+python-dotenv
+beautifulsoup4
+datetime
+pandas
+langchain-openai
+cloudinary
+
+
