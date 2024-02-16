@@ -4,7 +4,7 @@ from langchain_google_genai import GoogleGenerativeAI
 from bs4 import BeautifulSoup
 from datetime import datetime
 import streamlit as st
-
+import requests
 from openai import OpenAI as opAI
 from langchain.llms import OpenAI
 from langchain.callbacks import get_openai_callback
@@ -137,23 +137,41 @@ def making_img_list(img_url1, img_url2 ):
 
 
 #-------------------------------------API Keys Verification----------------------------------------
+
+    
 def openAI_api_key_valid(openAI_api_key):
-    try:
-        llm=OpenAI(model_name="gpt-3.5-turbo-instruct", openai_api_key=openAI_api_key, max_tokens=3 )
-        response = llm.invoke("hi")
-    except Exception as e:
+    endpoint='https://api.openai.com/v1/chat/completions'
+    headers = {
+    'Authorization': f'Bearer {openAI_api_key}',
+    'Content-Type': 'application/json',}
+    data = {"model": "gpt-3.5-turbo",
+     "messages": [{"role": "user", "content": "Say this is a test!"}],
+     "temperature": 0.7}
+    response = requests.post(endpoint, json=data, headers=headers)
+    if response.status_code == 200:
+        return True
+    elif response.status_code == 401:
+        print("Unauthorized. Check your API key.")
         return "wrong key"
     else:
-        return True
-    
+        print("Error:", response.status_code)
+
+
 
 def google_api_key_valid(google_ki_api_key):
-    try:
-        llm=GoogleGenerativeAI(model="gemini-pro",google_api_key=google_ki_api_key,max_retries=0)
-        response = llm.invoke("hi")
-    except Exception as e:
-        return "wrong key"
+    endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent'
+    headers = {'Content-Type': 'application/json',}
+    payload = {
+        "contents": [{"parts": [{"text": "Hi, How are you?"}]}]}
+    url_with_key = f"{endpoint}?key={google_ki_api_key}"
+
+    response = requests.post(url_with_key, json=payload, headers=headers)
+
+    print("Response Code:", response.status_code)
+    if response.status_code == 200:
+        return True  
+    
+    elif response.status_code == 400:
+        return 'wrong key'
     else:
-        return True
-
-
+        print(f"Error {response.status_code}: {response.text}")

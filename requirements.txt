@@ -9,4 +9,3 @@ pandas
 langchain-openai
 cloudinary
 
-
