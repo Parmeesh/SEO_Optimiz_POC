@@ -8,4 +8,4 @@ datetime
 pandas
 langchain-openai
 cloudinary
-
+langchain-community
