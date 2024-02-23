@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WYSWYG Editor TinyMCE</title>
+    <script src="https://cdn.tiny.cloud/1/r44eubq58rzlu6272eedja2g2nzjz7wyvlsbag4y6p5n37pl/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/get-html-content')
+                .then(response => response.text())
+                .then(data => {
+                    tinymce.init({
+                        height:500,
+                        selector: '#myEditor',
+                        plugins: 'a11ychecker advcode casechange formatpainter linkchecker autolink lists checklist media mediaembed pageembed permanentpen powerpaste table advtable tinycomments tinymcespellchecker',
+                        tinycomments_mode: 'embedded',
+                        tinycomments_author: 'Author name',
+                        setup: function (editor) {
+                            editor.ui.registry.addButton('saveButton', {
+                                text: 'Save 💾',
+                    
+                                onAction: function () {
+                                    fetch('/save-html-content', {
+                                        method: 'POST',
+                                        body: editor.getContent(),
+                                        headers: {
+                                            'Content-Type': 'text/plain',
+                                        },
+                                    }).then(response => {
+                                        if (response.ok) {
+                                            alert('Content saved successfully!');
+                                        }
+                                    });
+                                }
+                            });
+                            editor.on('init', function () {
+                                editor.setContent(data);
+                            });
+                        },
+                        toolbar: 'saveButton |undo redo| bold italic underline strikethrough | fontselect fontsizeselect formatselect | alignleft aligncenter alignright alignjustify | outdent indent |  numlist bullist checklist | forecolor backcolor casechange permanentpen formatpainter removeformat | pageembed | charmap emoticons | fullscreen  preview save print | insertfile image media pageembed template link anchor codesample | a11ycheck ltr rtl | showcomments addcomment '
+                    });
+                });
+        });
+    </script>
+</head>
+<body>
+<h2>WYSWYG Editor with TinyMCE</h2>
+<textarea id="myEditor"></textarea>
+</body>
+</html>

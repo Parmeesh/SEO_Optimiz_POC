@@ -12,7 +12,6 @@ import cloudinary, cloudinary.uploader
 
 from Prompt import *
 
-
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -22,7 +21,7 @@ def fetch_article(url):
     article=Article(url)
     article.download()
     article.parse()
-    r_splitter = RecursiveCharacterTextSplitter(chunk_size=2800, chunk_overlap=10)
+    r_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=10)
     splits=r_splitter.split_text(article.text)
     content=splits[0]
     print(len(splits))
@@ -36,8 +35,7 @@ def fetch_article(url):
         'Keywords': ', '.join(article.meta_keywords),
         'Top Image': article.top_image,
         'Tags':article.tags}
-    return content, metadata
-   
+    return content, metadata, article.title
 
 def local_css(style):
     with open(style) as f:
@@ -46,14 +44,12 @@ def local_css(style):
 
 #------------------------Google---------------------------------------------------------------------------------
 def init_Gemini_llm(googlekey):
-    llm=GoogleGenerativeAI(model="gemini-pro",google_api_key=googlekey, temperature=0.7)
+    llm=GoogleGenerativeAI(model="gemini-pro",google_api_key=googlekey, temperature=0.5, max_output_tokens=2500)
     return llm
 
-def seo_optimize_article(article, llm, prompt):
-    formatted_prompt_seo=prompt.format(original_article=article)
-    # print(formatted_prompt_seo)
-    response=llm.invoke(formatted_prompt_seo)
-    # print("length of response after invoking the model is=", len(response))
+def seo_optimize_article(article,keyword_list, llm, prompt):
+    formatted_prompt_seo=prompt.format(original_article=article, keyword_list=keyword_list)
+    response=llm.invoke(str(formatted_prompt_seo))
     return response
 
 def generate_new_article_metadata(article):
@@ -71,13 +67,13 @@ def generate_new_article_metadata(article):
 def generate_HTML_with_image_gemini(llm,prompt_image_gen,html_article, img_list):
         formatted_prompt_image = prompt_image_gen.format(html_article=html_article, img_list=img_list)
         print(formatted_prompt_image)
-        response=llm.predict(formatted_prompt_image)
+        response=llm.invoke(formatted_prompt_image)
         return response
 
 #-----------------------------OpenAI--------------------------------------------------------
 
 def init_OpenAI_llm(openai_key):
-    llm=OpenAI(model_name="gpt-3.5-turbo-instruct",temperature=0.55, openai_api_key=openai_key,verbose=True, max_tokens=2000)
+    llm=OpenAI(model_name="gpt-3.5-turbo-instruct",temperature=0.75, openai_api_key=openai_key,verbose=True, max_tokens=2500)
     return llm
 
 
@@ -120,10 +116,10 @@ def generate_images(llm,title):
         model="dall-e-2",
         prompt=title,
         size="512x512",
-        quality="standard",
+        # quality="standard",
         n=2,
         response_format="url")
-    return response.data[0].url, response.data[1].url
+    return response.data[0].url,response.data[1].url
 
 
 def making_img_list(img_url1, img_url2 ):
@@ -175,3 +171,39 @@ def google_api_key_valid(google_ki_api_key):
         return 'wrong key'
     else:
         print(f"Error {response.status_code}: {response.text}")
+
+#-----------------------------------------------Google Search-------------------------------------------------
+def get_url_top1_searches(title):
+    SEARCH_API_KEY = 'AIzaSyDIBgrGOxCtDgLPeSqhkMF349UAZGbkt3E'
+    SEARCH_ENGINE_ID = 'f5ed74e7757ee44c4'
+    SEARCH_URL = 'https://www.googleapis.com/customsearch/v1'
+    params={
+        'q': title,
+        'cx': SEARCH_ENGINE_ID,
+        'key': SEARCH_API_KEY,
+        'num': 1,
+        'siteSearch': 'www.britannica.com/*'}
+    
+    response = requests.get(SEARCH_URL, params=params)
+    if response.status_code == 200:
+        search_results = response.json()
+        url_list = search_results['items'][0]['link']
+        return url_list
+    else:
+        print(f"Error: {response.status_code}")
+    
+
+def get_text(url):
+    article=Article(url)
+    article.download()
+    article.parse()
+    r_splitter=RecursiveCharacterTextSplitter(chunk_size=3000, chunk_overlap=15)
+    splits=r_splitter.split_text(article.text)
+    return splits[0]
+
+def get_keywords(llm, article_text):
+    format_prompt_keywords= prompt_for_keywords.format(article_text=article_text)
+    response = llm.invoke(format_prompt_keywords)
+    keyword_list = [item.split(". ", 1)[-1] for item in response.split('\n')]
+    return keyword_list
+

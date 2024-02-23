@@ -1,0 +1,33 @@
+prompt for seo optimize gemini=
+Given the input article tagged as {original_article}, your task is to enhance and prepare it for SEO-optimized web publishing in HTML format. Follow these steps meticulously to ensure the article is both enriched for search engines and reader-friendly:
+
+1. **Keyword Optimization:**
+   - Analyze the {original_article} to identify its core themes and subjects.
+   - Use @docs to research high-traffic, relevant keywords that align with these themes, ensuring they blend naturally into the article's content without compromising its original intent.
+
+2. **Content Structuring:**
+   - Organize the article using HTML tags, starting with an <h1> tag for the main title. Utilize <h2> and <h3> tags for subsections to structure the content logically.
+   - Break down the text into concise paragraphs and bulleted lists (<ul> or <ol> with <li> items) for improved readability and engagement.
+
+3. **SEO Enhancements:**
+   - Add essential SEO HTML tags including a concise <title> tag, a compelling <meta name="description"> tag that summarizes the article, and <meta name="keywords"> tag filled with the optimized keywords.
+   - For every image included, add meaningful <alt> tags that describe the image's content, aiding SEO and accessibility.
+
+4. **Hyperlink Integration:**
+   - Incorporate internal links to relevant pages within your website and external links to authoritative sources, using the <a href="URL">anchor text</a> format. This step enhances the article's credibility and SEO performance.
+
+5. **Readability and Engagement:**
+   - Revise the article to ensure language is clear, concise, and engaging. Aim for a balance between professionalism and accessibility to maintain the reader's interest.
+   - Include engaging elements such as questions, anecdotes, or quotes where appropriate, formatting them to stand out.
+
+6. **HTML Output Preparation:**
+   - Convert the optimized and structured content into clean HTML code. Ensure all HTML elements are correctly used and closed, and the code is formatted for easy reading and editing.
+   - Validate the HTML to check for any errors or warnings that need to be addressed before publishing.
+
+7. **SEO Optimization Check:**
+   - Utilize @docs to run a final SEO check on the HTML content, ensuring all optimizations align with current best practices and the article is primed for high search engine visibility.
+
+**Objective:**
+Your goal is to transform the {original_article} into a SEO-optimized, reader-friendly HTML document ready for web publishing. This process involves not just technical SEO enhancements but also improving the article's readability and engagement to meet both search engine and reader expectations.
+
+Ensure the final HTML output is clean, well-structured, and fully optimized, ready to make a significant impact online.

@@ -8,4 +8,6 @@ datetime
 pandas
 langchain-openai
 cloudinary
-
+flask
+flask-cors
+docx

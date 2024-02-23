@@ -4,6 +4,7 @@ import time
 import pandas as pd
 import os
 from dotenv import load_dotenv
+import subprocess
 
 from Functions import *
 
@@ -54,12 +55,17 @@ if "count_output" not in st.session_state:
 if "final_html_with_img_openai" not in st.session_state:
     st.session_state["final_html_with_img_openai"]=[]
 
+if "editor_key" not in st.session_state:
+    st.session_state['editor_key']=[]
 
 st.set_page_config(page_title="SEO Optimizer", layout="wide")
 st.header(":blue[Article Generation 📋]")
 local_css("style.css")
 sidebar=st.sidebar.image("https://ispoc.impressicocrm.com/images/ibs-logo-big.png")
-sidebar_selectbox=st.sidebar.selectbox(label="Select the model type you wish to use", index=True, options=("Gemini","OpenAI"))
+
+llm_options=["Gemini", "OpenAI"]
+sidebar_selectbox=st.sidebar.selectbox(label="Select the model type you wish to use", options=llm_options)
+    
 sidebar_api_key_form=st.sidebar.form(key="api_form", clear_on_submit=False)
 with sidebar_api_key_form:
     st.header("Configure API Keys for the Following Models")
@@ -85,7 +91,7 @@ with sidebar_api_key_form:
 #---------------------------------------GEMINI------------------------------------------------------------------
 
 if sidebar_selectbox=="Gemini":
-    Tab1, Tab2 = st.tabs(['SEO Optmization','Image Generation'])
+    Tab1, Tab2, Tab3 = st.tabs(['SEO Optmization','Image Generation', 'Editor'])
     with Tab1:
         _container_=st.container()
         with _container_:
@@ -101,7 +107,7 @@ if sidebar_selectbox=="Gemini":
             st.session_state["new_metadata"] = []
             st.session_state["input_tokens"] = []
             st.session_state["output_tokens"] = []
-
+        
         st.markdown(body="Optimize your article's online visibility with this Tab. Simply provide the URL of your article, and it'll analyze, enhance, and generate SEO-optimized HTML content using Google's Gemini-Pro.")
         article_url=st.text_input(label="Enter the URL of your article for SEO optimization:", placeholder="https://example.com/article")
         submit_button=st.button(label="Optimize")
@@ -116,19 +122,28 @@ if sidebar_selectbox=="Gemini":
                     for percent_complete in range(0,25):
                         time.sleep(0.01)
                         my_bar.progress(percent_complete+1, text="Fetching content from Article.....")
-                    st.session_state["original_article"], st.session_state["original_metadata"]=fetch_article(url=article_url)
-                    print("Original Article looks like this-", st.session_state['original_article'])
+                    st.session_state["original_article"], st.session_state["original_metadata"], orig_article_title=fetch_article(url=article_url)
+                    print("title=",orig_article_title)
+                    print("original_article_sessionstate=", st.session_state['original_article'])
+                    print("type of st.sessionstate.original_article=", type(st.session_state['original_article']))
+                    url_=get_url_top1_searches(orig_article_title)
+                    print("url list=",url_)
+                    art_text=get_text(url_)
+                    keyword_list=get_keywords(llm=llm, article_text=art_text)
+                    print(keyword_list)
+                    print("type of keyword list=", type(keyword_list))
+                    # print("Original Article looks like this-", st.session_state['original_article'])
                     for percent_complete in range(25,50):
                         time.sleep(0.01)
                         my_bar.progress(percent_complete+1, text="SEO Optimizing the Article.....")
-                    optimized_article_string=seo_optimize_article(article=st.session_state["original_article"], llm=llm, prompt=prompt_seo)
+                    optimized_article_string=seo_optimize_article(article=st.session_state["original_article"],keyword_list=keyword_list, llm=llm, prompt=prompt_gemini_seo)
                     st.session_state["optimized_article"]=optimized_article_string.strip()[7:-3].strip()
                     print("optimized Article is-",st.session_state["optimized_article"])
 
                     for percent_complete in range(50,75):
                         time.sleep(0.01)
                         my_bar.progress(percent_complete+1, text="Generating new Metadata.....")
-                    st.session_state["new_metadata"], st.session_state["title_from_html_gemini"]=generate_new_article_metadata(st.session_state["optimized_article"])
+                    st.session_state["new_metadata"], st.session_state["title_from_html_gemini"]=generate_new_article_metadata(str(st.session_state["optimized_article"]))
                     print("title to be given for image generation is",st.session_state["title_from_html_gemini"])
 
                     for percent_complete in range(75,100):
@@ -173,7 +188,8 @@ if sidebar_selectbox=="Gemini":
                     with columns[1]:
                         st.write(st.session_state["new_metadata"])
                 st.markdown('---')
-                
+
+
     with Tab2:
         st.header("Image generation Tab")
         st.markdown("Explore creative possibilities by leveraging DALL-E-2 to generate compelling images. Simply initiate the process by pressing the button, and seamlessly integrate the generated images into your optimized article.")
@@ -192,7 +208,7 @@ if sidebar_selectbox=="Gemini":
                     for percent_complete in range(25,50):
                         time.sleep(0.01)
                         my_pbar.progress(percent_complete+1, text="Initializing DallE-2.....")
-                    image_llm = opAI()
+                    image_llm =opAI(api_key=str(st.session_state['openAI_api_key']))
                     if st.session_state["optimized_article"]==[]:
                         c=st.columns([1,6,1])
                         with c[1]:
@@ -255,6 +271,99 @@ if sidebar_selectbox=="Gemini":
                         with cos[1]:
                             components.html(html=str(st.session_state["final_html_with_img_gemini"]), height=600, scrolling=True)
                         st.markdown("---")
+
+
+
+    with Tab3:
+        import subprocess as sp
+        print(st.session_state['final_html_with_img_gemini'])
+        st.header('Editor Window to make manual changes')
+        editor_key=st.text_input(label="Enter the API Key of TinyMCE Editor for initializing your WYSWYG Editor-", type='password')
+        editorButton=st.button(label='Start')
+        if editor_key and editorButton:
+            st.session_state['editor_key']=editor_key
+            with st.spinner(text="Initializing WYSWYG Editor....."):
+                
+                # proc = subprocess.Popen(["python", "editor.py"])
+                extProc = sp.Popen(['python','editor.py']) 
+                time.sleep(30)
+                payload = {"content": st.session_state['final_html_with_img_gemini']}
+                response = requests.post('http://localhost:3002/get-html-content',json=payload)
+                print(response)
+                if response.ok:
+                    response_data= response.json()
+                else:
+                    st.error('Failed to send data')
+                    sp.Popen.terminate(extProc)
+                editor_html_template1='''<!DOCTYPE html>
+                                <html>
+                                <head>
+                                    <title>WYSWYG Editor</title>
+                                    <script src="https://cdn.tiny.cloud/1/'''
+                editor_html_template2='''/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+                                    <script>
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    fetch('http://localhost:3002/content-flask', {
+                                            method: 'POST', // Specify the method
+                                            headers: {
+                                                'Content-Type': 'application/json', // Ensure correct content type
+                                            }
+                                        })
+                                        .then(response => response.json()) // Corrected part
+                                        .then(data => {
+                                            tinymce.init({
+                                                height:700,
+                                                selector: '#myEditor',
+                                                plugins: 'a11ychecker advcode casechange formatpainter linkchecker autolink lists checklist media mediaembed pageembed permanentpen powerpaste table advtable tinycomments tinymcespellchecker',
+                                                tinycomments_mode: 'embedded',
+                                                tinycomments_author: 'Author name',
+                                                setup: function (editor) {
+                                                editor.ui.registry.addButton('downloadButton', {
+                                                    text: 'Download 📥',
+                                                    onAction: function () {
+                                                        var content = editor.getContent();
+                                                        fetch('http://localhost:3002/download-html-content', {
+                                                            method: 'POST',
+                                                            body: JSON.stringify({ content: content }),
+                                                            headers: {
+                                                                'Content-Type': 'application/json',
+                                                            },
+                                                        }).then(response => {
+                                                            if (response.ok) {
+                                                                response.blob().then(blob => {
+                                                                    var url = window.URL.createObjectURL(blob);
+                                                                    var a = document.createElement('a');
+                                                                    a.href = url;
+                                                                    a.download = 'document.docx';
+                                                                    document.body.appendChild(a); // we need to append the element to the dom -> otherwise it will not work in firefox
+                                                                    a.click();    
+                                                                    a.remove();
+                                                                }
+                                                            });
+                                                        }
+                                                    });
+                                                    editor.on('init', function () {
+                                                        editor.setContent(data.content); // Corrected part
+                                                    });
+                                                },
+                                                toolbar: 'saveButton |undo redo| bold italic underline strikethrough | fontselect fontsizeselect formatselect | alignleft aligncenter alignright alignjustify | outdent indent |  numlist bullist checklist | forecolor backcolor casechange permanentpen formatpainter removeformat | pageembed | charmap emoticons | fullscreen  preview save print | insertfile image media pageembed template link anchor codesample | a11ycheck ltr rtl | showcomments addcomment '
+                                            });
+                                        });
+                                });
+                                </script>
+
+                                </head>
+                                <body>
+                                <h2>Article Editor</h2>
+                                <textarea id="myEditor"></textarea>
+                                </body>
+                                </html>'''
+                st.markdown('---')
+                components.html(html=(editor_html_template1+st.session_state['editor_key']+editor_html_template2), height=800, scrolling=True)
+                st.markdown('---')
+
+
+
 #----------------------------------------------OPENAI--------------------------------------------------------
 else:
     Tab1, Tab2 = st.tabs(['SEO Optmization','Image Generation'])
@@ -292,7 +401,7 @@ else:
                     for percent_complete in range(25,50):
                         time.sleep(0.01)
                         my_bar.progress(percent_complete+1, text="SEO Optimizing the Article.....")
-                    st.session_state["optimized_article"], st.session_state["callback_openAI"]=seo_optimize_article_Openai(article=st.session_state["original_article"], llm=llm, prompt=prompt_seo)
+                    st.session_state["optimized_article"], st.session_state["callback_openAI"]=seo_optimize_article_Openai(article=st.session_state["original_article"], llm=llm, prompt=prompt_openai_seo)
                     print(st.session_state["callback_openAI"])
 
                     for percent_complete in range(50,75):
@@ -370,7 +479,7 @@ else:
                     for percent_complete in range(25,50):
                         time.sleep(0.01)
                         progress_bar.progress(percent_complete+1, text="Initializing DallE-2.....")
-                    image_llm = opAI()
+                    image_llm = opAI(api_key=str(st.session_state['openAI_api_key']))
                     if st.session_state["optimized_article"]==[]:
                         co=st.columns([1,6,1])
                         with co[1]:
