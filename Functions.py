@@ -6,7 +6,7 @@ from datetime import datetime
 import streamlit as st
 import requests
 from openai import OpenAI as opAI
-from from langchain_community.llms import OpenAI
+from langchain_community.llms import OpenAI
 from langchain_community.callbacks import get_openai_callback
 import cloudinary, cloudinary.uploader
 
